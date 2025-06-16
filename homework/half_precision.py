@@ -17,14 +17,21 @@ class HalfLinear(torch.nn.Linear):
         Feel free to use the torch.nn.Linear class as a parent class (it makes load_state_dict easier, names match).
         Feel free to set self.requires_grad_ to False, we will not backpropagate through this layer.
         """
-        # TODO: Implement me
-        raise NotImplementedError()
+        super().__init__(in_features, out_features, bias=bias)
+        self.weight.data = self.weight.data.half()
+        if self.bias is not None:
+            self.bias.data = self.bias.data.half()
+        # Commenting this out since it can interfere with .parameters()
+        # self.requires_grad_(False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Hint: Use the .to method to cast a tensor to a different dtype (i.e. torch.float16 or x.dtype)
         # The input and output should be of x.dtype = torch.float32
-        # TODO: Implement me
-        raise NotImplementedError()
+        return torch.nn.functional.linear(
+            x,
+            self.weight.to(dtype=x.dtype),
+            self.bias.to(dtype=x.dtype) if self.bias is not None else None
+        )
 
 
 class HalfBigNet(torch.nn.Module):
@@ -34,18 +41,34 @@ class HalfBigNet(torch.nn.Module):
     """
 
     class Block(torch.nn.Module):
-        def __init__(self, channels: int):
+        def __init__(self, channels):
             super().__init__()
-            # TODO: Implement me (feel free to copy and reuse code from bignet.py)
-            raise NotImplementedError()
+            self.model = torch.nn.Sequential(
+                HalfLinear(channels, channels),
+                torch.nn.ReLU(),
+                HalfLinear(channels, channels),
+                torch.nn.ReLU(),
+                HalfLinear(channels, channels),
+            )
 
-        def forward(self, x: torch.Tensor):
+        def forward(self, x):
             return self.model(x) + x
 
     def __init__(self):
         super().__init__()
-        # TODO: Implement me (feel free to copy and reuse code from bignet.py)
-        raise NotImplementedError()
+        self.model = torch.nn.Sequential(
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
