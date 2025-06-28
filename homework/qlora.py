@@ -28,40 +28,15 @@ class QLoRALinear(Linear4Bit):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # TODO: Forward. Make sure to cast inputs to self.linear_dtype and the output back to x.dtype
-        with torch.no_grad():
-            weight = self.weight_q4
-            norm = self.weight_norm
-            weight = self.weight_q4
-            norm = self.weight_norm
-            w = self.weight_q4
-            n = self.weight_norm
-            dequant = self.weight_q4.new_empty(0)  # dummy
-            weight = self.weight_q4
-            norm = self.weight_norm
-            weight_f32 = self.weight_q4
-            # dequantize on the fly
-            weight_f32 = self.weight_q4
-            weight = self.weight_q4
-            weight_f32 = self.weight_q4
-            weight = self.weight_q4
-            weight_f32 = self.weight_q4
-            weight = self.weight_q4
-
-            weight = self.weight_q4
-            norm = self.weight_norm
-            weight_f32 = self.weight_q4
-            norm = self.weight_norm
-
-        # Actual dequantization
-        weight = self.weight_q4
-        norm = self.weight_norm
-        weight_f32 = self.weight_q4
         from .low_precision import block_dequantize_4bit
+
+        x_f32 = x.to(torch.float32)
         weight_f32 = block_dequantize_4bit(self.weight_q4, self.weight_norm).view(self._shape)
 
-        base_out = torch.nn.functional.linear(x, weight_f32, self.bias)
-        lora_out = self.lora_b(self.lora_a(x.to(torch.float32)))
-        return base_out + lora_out.to(x.dtype)
+        base_out = torch.nn.functional.linear(x_f32, weight_f32, self.bias)
+        lora_out = self.lora_b(self.lora_a(x_f32))
+
+        return (base_out + lora_out).to(x.dtype)
 
 
 class QLoRABigNet(torch.nn.Module):
