@@ -1,9 +1,7 @@
 from pathlib import Path
-
 import torch
-
 from .bignet import BIGNET_DIM, LayerNorm  # noqa: F401
-from .low_precision import Linear4Bit
+from .low_precision import Linear4Bit, block_dequantize_4bit
 
 
 class QLoRALinear(Linear4Bit):
@@ -18,8 +16,7 @@ class QLoRALinear(Linear4Bit):
         super().__init__(in_features, out_features, bias, group_size)
         self.requires_grad_(False)
 
-        # TODO: Implement LoRA, initialize the layers, and make sure they are trainable
-        # Keep the LoRA layers in float32
+        # Keep LoRA layers in float32
         self.lora_a = torch.nn.Linear(in_features, lora_dim, bias=False).to(dtype=torch.float32)
         self.lora_b = torch.nn.Linear(lora_dim, out_features, bias=False).to(dtype=torch.float32)
 
@@ -27,9 +24,6 @@ class QLoRALinear(Linear4Bit):
         torch.nn.init.zeros_(self.lora_b.weight)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: Forward. Make sure to cast inputs to self.linear_dtype and the output back to x.dtype
-        from .low_precision import block_dequantize_4bit
-
         x_f32 = x.to(torch.float32)
         weight_f32 = block_dequantize_4bit(self.weight_q4, self.weight_norm).view(self._shape)
 
@@ -43,7 +37,6 @@ class QLoRABigNet(torch.nn.Module):
     class Block(torch.nn.Module):
         def __init__(self, channels, lora_dim, group_size):
             super().__init__()
-            # TODO: Implement me (feel free to copy and reuse code from bignet.py)
             self.model = torch.nn.Sequential(
                 QLoRALinear(channels, channels, lora_dim, group_size),
                 torch.nn.ReLU(),
@@ -57,7 +50,6 @@ class QLoRABigNet(torch.nn.Module):
 
     def __init__(self, lora_dim: int = 32, group_size: int = 16):
         super().__init__()
-        # TODO: Implement me (feel free to copy and reuse code from bignet.py)
         self.model = torch.nn.Sequential(
             self.Block(BIGNET_DIM, lora_dim, group_size),
             LayerNorm(BIGNET_DIM),
