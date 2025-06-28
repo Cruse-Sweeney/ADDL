@@ -3,7 +3,7 @@ import torch
 from .bignet import BIGNET_DIM, LayerNorm  # noqa: F401
 
 
-def block_quantize_2bit(x: torch.Tensor, group_size: int = 16) -> tuple[torch.Tensor, torch.Tensor]:
+def block_quantize_2bit(x: torch.Tensor, group_size: int = 128) -> tuple[torch.Tensor, torch.Tensor]:
     assert x.dim() == 1
     assert x.size(0) % group_size == 0
 
@@ -32,7 +32,7 @@ def block_dequantize_2bit(x_quant_2: torch.Tensor, normalization: torch.Tensor) 
 
 
 class Linear2Bit(torch.nn.Module):
-    def __init__(self, in_features: int, out_features: int, bias: bool = True, group_size: int = 16) -> None:
+    def __init__(self, in_features: int, out_features: int, bias: bool = True, group_size: int = 128) -> None:
         super().__init__()
         self._shape = (out_features, in_features)
         self._group_size = group_size
